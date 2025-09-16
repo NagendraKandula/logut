@@ -85,6 +85,8 @@
   border-radius: 6px;
   text-decoration: none;
 }
+
+/* Grid inside dropdown */
 .grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(150px, 1fr)); /* 2 vertical columns */
@@ -102,4 +104,40 @@
 
 .grid a:hover {
   color: #0070f3;
+}
+
+/* Hero container */
+.heroContainer {
+  position: relative;
+  width: 100%;
+  height: 100vh; /* full height */
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center; /* center slide content */
+}
+
+/* Dots navigation in the middle */
+.dotsNav {
+  position: absolute;
+  top: 50%; /* middle of screen */
+  left: 50%;
+  transform: translate(-50%, -50%); /* perfect center */
+  display: flex;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.dot {
+  font-size: 24px;
+  color: #aaa;
+  transition: color 0.3s ease;
+}
+
+.activeDot {
+  color: #000; /* active dot color */
+}
+
+.dot:hover {
+  color: #555; /* hover effect */
 }

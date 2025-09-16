@@ -136,7 +136,7 @@ export default function LoginPage() {
                       <path d="M12.18 6.89c2.14 0 3.58.92 4.41 1.7l3.23-3.15C18.55 3.84 15.89 2.5 12.18 2.5c-4.07 0-7.57 2.02-9.32 5.04l3.82 2.51c.75-2.28 2.88-4.16 5.5-4.16z" fill="#EA4335"></path>
                   </g>
               </svg>
-              <span>Sign in with Google</span>
+              <span>Contiune with Google</span>
             </a>
 
             <p className={styles.signupLink}>

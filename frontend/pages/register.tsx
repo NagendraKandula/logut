@@ -1,92 +1,62 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import axios from "axios";
-import styles from "../styles/Register.module.css"; // Adjust path as needed
+import styles from "../styles/Register.module.css";
 
 export default function SignupPage() {
-  // Form state
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [form, setForm] = useState({
+    username: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
 
-  // Toggle state for confirm password visibility
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState({
+    password: false,
+    confirm: false,
+  });
 
-  // Loading and messages
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState<string[]>([]);
+  const [success, setSuccess] = useState("");
 
-  // Toggle confirm password field visibility
-  const toggleConfirmPasswordVisibility = () => setShowConfirmPassword(s => !s);
+  const passwordRules = [
+    { test: (p: string) => p.length >= 8, label: "At least 8 characters" },
+    { test: (p: string) => /[A-Z]/.test(p), label: "One uppercase letter" },
+    { test: (p: string) => /[a-z]/.test(p), label: "One lowercase letter" },
+    { test: (p: string) => /\d/.test(p), label: "One number" },
+    { test: (p: string) => /[@$!%*?&]/.test(p), label: "One special character" },
+  ];
 
-  // Simple email validation
-  const validateEmail = (email: string) => {
-    const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return re.test(email);
+  const checkStrength = (password: string) => {
+    const passed = passwordRules.filter((rule) => rule.test(password)).length;
+    if (passed <= 2) return "Weak";
+    if (passed === 3 || passed === 4) return "Medium";
+    return "Strong";
   };
 
-  // Client-side form validation
-  const validateForm = () => {
-    if (!username.trim()) {
-      setError("Please enter your full name.");
-      return false;
-    }
-    if (!email.trim()) {
-      setError("Please enter your email.");
-      return false;
-    }
-    if (!validateEmail(email)) {
-      setError("Please enter a valid email.");
-      return false;
-    }
-    if (!password) {
-      setError("Please enter a password.");
-      return false;
-    }
-    if (password.length < 6) {
-      setError("Password should be at least 6 characters.");
-      return false;
-    }
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
-      return false;
-    }
-    setError("");
-    return true;
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrors([]);
+    setSuccess("");
 
-    if (!validateForm()) return; // Stop submission if validation fails
-
-    setLoading(true);
-    setMessage("");
-    setError("");
+    if (form.password !== form.confirmPassword) {
+      setErrors(["Passwords do not match"]);
+      return;
+    }
 
     try {
-      const response = await axios.post("http://localhost:4000/auth/register", {
-        fullName: username,
-        email,
-        password,
-        confirmPassword,
-      });
-      setMessage(response.data.message || "Registration successful!");
-      // Clear form on success
-      setUsername("");
-      setEmail("");
-      setPassword("");
-      setConfirmPassword("");
+      const res = await axios.post("http://localhost:4000/signup", form);
+      setSuccess(res.data.message || "Signup successful!");
+      setForm({ username: "", email: "", password: "", confirmPassword: "" });
     } catch (err: any) {
-      if (err.response?.data?.message) {
-        setError(err.response.data.message);
-      } else {
-        setError("Registration failed. Please try again.");
-      }
-    } finally {
-      setLoading(false);
+      const message =
+        err.response?.data?.message ||
+        "Something went wrong. Please try again.";
+      setErrors(Array.isArray(message) ? message : [message]);
     }
   };
 
@@ -94,152 +64,134 @@ export default function SignupPage() {
     <div className={styles.pageGifBg}>
       <div className={styles.centeredContent}>
         <div className={styles.loginCard}>
-          <h2 className={styles.loginTitle}>Sign Up</h2>
-          <form className={styles.loginForm} onSubmit={handleSubmit} noValidate>
+          <h2 className={styles.loginTitle}>Create an Account</h2>
+          <p className={styles.signupLink}>
+            Already have an account?{" "}
+            <Link href="/login" className={styles.link}>
+              Log in
+            </Link>
+          </p>
 
-            {/* Username input */}
+          <form onSubmit={handleSubmit} className={styles.loginForm}>
+            {/* Username */}
             <div className={styles.formGroup}>
-              <label className={styles.inputLabel} htmlFor="username">Full Name</label>
               <input
                 type="text"
-                id="username"
+                name="username"
                 placeholder="Full Name"
                 className={styles.input}
+                value={form.username}
+                onChange={handleChange}
                 required
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
               />
             </div>
 
-            {/* Email input */}
+            {/* Email */}
             <div className={styles.formGroup}>
-              <label className={styles.inputLabel} htmlFor="email">Email</label>
               <input
                 type="email"
-                id="email"
-                placeholder="username@gmail.com"
+                name="email"
+                placeholder="Email Address"
                 className={styles.input}
+                value={form.email}
+                onChange={handleChange}
                 required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
 
-            {/* Password input (no eye toggle) */}
+            {/* Password */}
             <div className={styles.formGroup}>
-              <label className={styles.inputLabel} htmlFor="password">Password</label>
               <input
-                type="text"
-                id="password"
-                placeholder="Enter your password"
+                type={showPassword.password ? "text" : "password"}
+                name="password"
+                placeholder="Password"
                 className={styles.input}
+                value={form.password}
+                onChange={handleChange}
                 required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-
-            {/* Confirm Password input with eye toggle */}
-            <div className={styles.formGroup}>
-              <label className={styles.inputLabel} htmlFor="confirmPassword">Confirm Password</label>
-              <input
-                type={showConfirmPassword ? "text" : "password"}
-                id="confirmPassword"
-                placeholder="Re-enter your password"
-                className={styles.input}
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
               />
               <span
                 className={styles.toggleEye}
-                role="button"
-                tabIndex={0}
-                onClick={toggleConfirmPasswordVisibility}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    toggleConfirmPasswordVisibility();
-                  }
-                }}
-                aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                onClick={() =>
+                  setShowPassword((s) => ({ ...s, password: !s.password }))
+                }
               >
-                {showConfirmPassword ? (
-                  <svg
-                    height="25"
-                    width="30"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#4877f5"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <ellipse cx="12" cy="12" rx="8" ry="5" />
-                    <circle cx="12" cy="12" r="2.5" fill="#4877f5" />
-                  </svg>
-                ) : (
-                  <svg
-                    height="25"
-                    width="30"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="#4877f5"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <ellipse cx="12" cy="12" rx="8" ry="5" />
-                    <circle cx="12" cy="12" r="2.5" fill="#4877f5" />
-                    <line x1="4" y1="20" x2="20" y2="4" stroke="#bcbcbc" strokeWidth="2" />
-                  </svg>
-                )}
+                {showPassword.password ? "🙈" : "👁️"}
               </span>
             </div>
 
-            {/* Submit button */}
-            <button type="submit" className={styles.button} disabled={loading}>
-              {loading ? "Registering..." : "Register"}
-            </button>
+            {/* Strength indicator */}
+            {form.password && (
+              <div className={styles.divider}>
+                <p>Password Strength: {checkStrength(form.password)}</p>
+                <ul>
+                  {passwordRules.map((rule, i) => (
+                    <li
+                      key={i}
+                      className={
+                        rule.test(form.password)
+                          ? styles.valid
+                          : styles.invalid
+                      }
+                    >
+                      {rule.label}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
-            {/* Error and success messages */}
-            {error && <p style={{ color: "red", textAlign: "center" }}>{error}</p>}
-            {message && <p style={{ color: "green", textAlign: "center" }}>{message}</p>}
-
-            {/* Divider */}
-            <div className={styles.divider}>
-              <span className={styles.dividerLine}></span>
-              <span>or</span>
-              <span className={styles.dividerLine}></span>
+            {/* Confirm Password */}
+            <div className={styles.formGroup}>
+              <input
+                type={showPassword.confirm ? "text" : "password"}
+                name="confirmPassword"
+                placeholder="Confirm Password"
+                className={styles.input}
+                value={form.confirmPassword}
+                onChange={handleChange}
+                required
+              />
+              <span
+                className={styles.toggleEye}
+                onClick={() =>
+                  setShowPassword((s) => ({ ...s, confirm: !s.confirm }))
+                }
+              >
+                {showPassword.confirm ? "🙈" : "👁️"}
+              </span>
             </div>
 
-            {/* Google sign-up button */}
-            <button type="button" className={`${styles.button} ${styles.googleButton}`}>
-              <span className={styles.googleIconWrapper}>
-                <svg
-                  width="22"
-                  height="22"
-                  viewBox="1 1 50 50"
-                  xmlns="http://www.w3.org/2000/svg"
-                >
-                  <g>
-                    <path fill="#4285F4" d="M24 9.5c3.54 0 6.08 1.53 7.49 2.81l5.54-5.52C33.66 3.83 29.45 2 24 2 14.83 2 6.98 7.66 3.24 15.36l6.79 5.28C12.11 14.41 17.67 9.5 24 9.5z" />
-                    <path fill="#34A853" d="M46.41 24.54c0-1.82-.16-3.17-.51-4.56H24v9.19h12.66c-.27 2.01-1.64 5.04-4.73 7.07l7.28 5.64c4.25-3.92 6.7-9.72 6.7-17.34z" />
-                    <path fill="#FBBC05" d="M10.03 28.25a14.64 14.64 0 0 1 0-8.47l-6.8-5.29A23.989 23.989 0 0 0 2 24c0 3.86.92 7.54 2.53 10.51l7.5-6.26z" />
-                    <path fill="#EA4335" d="M24 46c6.48 0 11.92-2.12 15.89-5.77l-7.58-5.87c-2.1 1.42-4.97 2.43-8.31 2.43-6.37 0-11.77-4.16-13.71-9.99l-7.7 5.84C6.23 41.32 14.35 46 24 46z" />
-                    <path fill="none" d="M2 2h44v44H2z" />
-                  </g>
-                </svg>
-              </span>
-              <span className={styles.googleButtonText}>Sign up with Google</span>
-            </button>
+            {/* Errors */}
+            {errors.length > 0 && (
+              <div className={styles.error}>
+                {errors.map((err, i) => (
+                  <p key={i}>{err}</p>
+                ))}
+              </div>
+            )}
 
-            {/* Link to login */}
-            <p className={styles.signupLink}>
-              If you already have an account, please&nbsp;
-              <Link href="/login" className={styles.link}>Log In</Link>.
-            </p>
+            {/* Success */}
+            {success && <p className={styles.success}>{success}</p>}
+
+            <button type="submit" className={styles.button}>
+              Sign Up
+            </button>
           </form>
+          <div className={styles.divider}>
+  <div className={styles.dividerLine}></div>
+  <span>OR</span>
+  <div className={styles.dividerLine}></div>
+</div>
+          {/* Google signup */}
+          <button
+            className={styles.googleButton}
+            onClick={() =>
+              (window.location.href = "http://localhost:4000/auth/google")
+            }
+          >
+            Continue with Google
+          </button>
         </div>
       </div>
     </div>
