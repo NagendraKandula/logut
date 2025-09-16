@@ -190,7 +190,7 @@ export class AuthService {
   }
   // LOGOUT
   async Logout(res : Response){
-    res.clearCookie('access_token');
+    res.clearCookie('access_token' , { path: '/' });
     return {message : 'Logged out sucessfully'}
   }
 }
